@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Reusable accessible text field with label, icons, and error handling.
 class CustomTextField extends StatelessWidget {
@@ -12,8 +13,13 @@ class CustomTextField extends StatelessWidget {
   final TextInputAction textInputAction;
   final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onFieldSubmitted;
+  final ValueChanged<String>? onChanged;
+  final String? errorText;
   final bool enabled;
   final FocusNode? focusNode;
+  final TextCapitalization textCapitalization;
+  final int? maxLength;
+  final MaxLengthEnforcement maxLengthEnforcement;
 
   const CustomTextField({
     super.key,
@@ -27,8 +33,13 @@ class CustomTextField extends StatelessWidget {
     this.textInputAction = TextInputAction.next,
     this.validator,
     this.onFieldSubmitted,
+    this.onChanged,
+    this.errorText,
     this.enabled = true,
     this.focusNode,
+    this.textCapitalization = TextCapitalization.none,
+    this.maxLength,
+    this.maxLengthEnforcement = MaxLengthEnforcement.none,
   });
 
   @override
@@ -52,12 +63,20 @@ class CustomTextField extends StatelessWidget {
           obscureText: obscureText,
           keyboardType: keyboardType,
           textInputAction: textInputAction,
+          textCapitalization: textCapitalization,
+          maxLength: maxLength,
+          maxLengthEnforcement: maxLengthEnforcement,
           validator: validator,
           onFieldSubmitted: onFieldSubmitted,
+          onChanged: onChanged,
           enabled: enabled,
           style: theme.textTheme.bodyMedium,
+          buildCounter: maxLength != null
+              ? (context, {required currentLength, required isFocused, maxLength}) => null
+              : null,
           decoration: InputDecoration(
             hintText: hintText,
+            errorText: errorText,
             hintStyle: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
             ),

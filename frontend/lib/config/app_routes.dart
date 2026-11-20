@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/vehicle.dart';
 import '../providers/auth_provider.dart';
 import '../screens/login_screen.dart';
+import '../screens/vehicle_form_screen.dart';
 import '../screens/vehicle_list_screen.dart';
 
 /// Centralized route constants and route generation for Stark VMS.
@@ -11,6 +13,8 @@ class AppRoutes {
   static const String root = '/';
   static const String login = '/login';
   static const String vehicles = '/vehicles';
+  static const String addVehicle = '/vehicles/new';
+  static const String editVehicle = '/vehicles/edit';
 
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -40,6 +44,15 @@ class AppRoutes {
               return const LoginScreen();
             }
             return const VehicleListScreen();
+
+          case addVehicle:
+          case editVehicle:
+            // Guard protected route: redirect unauthenticated users to login
+            if (!authProvider.isAuthenticated) {
+              return const LoginScreen();
+            }
+            final vehicle = settings.arguments as Vehicle?;
+            return VehicleFormScreen(vehicle: vehicle);
 
           case root:
           default:

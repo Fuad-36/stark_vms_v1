@@ -69,7 +69,7 @@ void main() {
               401,
             );
           }
-          return http.Response(jsonEncode({'vehicles': []}), 200);
+          return http.Response(jsonEncode([]), 200);
         }
 
         return http.Response('Not Found', 404);
