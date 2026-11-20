@@ -8,6 +8,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -101,12 +103,46 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
         }
 
+        if (isUsernameConstraintViolation(ex)) {
+            String message = "Username already exists";
+            Map<String, String> fieldErrors = new LinkedHashMap<>();
+            fieldErrors.put("username", message);
+
+            ErrorResponse errorResponse = new ErrorResponse(
+                    HttpStatus.CONFLICT.value(),
+                    HttpStatus.CONFLICT.getReasonPhrase(),
+                    message,
+                    fieldErrors
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        }
+
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
                 "An unexpected error occurred"
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.UNAUTHORIZED.value(),
+                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                "Invalid username or password"
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                HttpStatus.FORBIDDEN.getReasonPhrase(),
+                "Access is denied"
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -142,6 +178,25 @@ public class GlobalExceptionHandler {
             }
             String msg = current.getMessage();
             if (msg != null && msg.toLowerCase(Locale.ROOT).contains("uk_vehicle_number")) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private boolean isUsernameConstraintViolation(DataIntegrityViolationException ex) {
+        java.util.Set<Throwable> visited = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        Throwable current = ex;
+        while (current != null && visited.add(current)) {
+            if (current instanceof ConstraintViolationException cve) {
+                String constraintName = cve.getConstraintName();
+                if (constraintName != null && constraintName.toLowerCase(Locale.ROOT).contains("uk_users_username")) {
+                    return true;
+                }
+            }
+            String msg = current.getMessage();
+            if (msg != null && (msg.toLowerCase(Locale.ROOT).contains("uk_users_username") || msg.toLowerCase(Locale.ROOT).contains("username"))) {
                 return true;
             }
             current = current.getCause();
